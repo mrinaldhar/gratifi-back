@@ -98,7 +98,7 @@ class DbHandler {
      * @param String $email User login email id
      * @param String $password User login password
      */
-    public function createUser($name, $email, $password) {
+    public function createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile) {
         require_once 'PassHash.php';
         $response = array();
 
@@ -111,8 +111,9 @@ class DbHandler {
             $api_key = $this->generateApiKey();
 
             // insert query
-            $stmt = $this->conn->prepare("INSERT INTO map_user(name, email, password_hash, api_key, status) values(?, ?, ?, ?, 1)");
-            $stmt->bind_param("ssss", $name, $email, $password_hash, $api_key);
+            $stmt = $this->conn->prepare("INSERT INTO map_user(name, email, password_hash, api_key, status, city, country, gender, business_id, age, mobile, user_type) values(?, ?, ?, ?, 1, ?, ?, ?, ?,?,?, 'Admin')");
+       var_dump($this->conn);     
+            $stmt->bind_param("sssssssiii", $name, $email, $password_hash, $api_key, $city, $country, $gender, intval($businessid), intval($age), intval($mobile));
 
             $result = $stmt->execute();
 
@@ -236,11 +237,11 @@ class DbHandler {
      * @param String $email User email id
      */
     public function getUserByEmail($email) {
-        $stmt = $this->conn->prepare("SELECT name, email, api_key, status, created_at FROM map_user WHERE email = ?");
+        $stmt = $this->conn->prepare("SELECT name, email, api_key, status, created_at, business_id FROM map_user WHERE email = ?");
         $stmt->bind_param("s", $email);
         if ($stmt->execute()) {
             // $user = $stmt->get_result()->fetch_assoc();
-            $stmt->bind_result($name, $email, $api_key, $status, $created_at);
+            $stmt->bind_result($name, $email, $api_key, $status, $created_at, $business_id);
             $stmt->fetch();
             $user = array();
             $user["name"] = $name;
@@ -248,6 +249,7 @@ class DbHandler {
             $user["api_key"] = $api_key;
             $user["status"] = $status;
             $user["created_at"] = $created_at;
+            $user["business_id"] = $business_id;
             $stmt->close();
             return $user;
         } else {
@@ -256,6 +258,92 @@ class DbHandler {
     }
 
 	
+    public function getTotalUsers($business_id) {
+        $stmt = $this->conn->prepare("SELECT count(*) FROM app_user WHERE business_id = ?");
+        $stmt->bind_param("i", $business_id);
+         if ($stmt->execute()) {
+            // $user = $stmt->get_result()->fetch_assoc();
+            $stmt->bind_result($count_total);
+            $stmt->fetch();
+        }
+        else {
+            return NULL;
+        }
+        return $count_total;
+    }
+
+    public function getMaleUsersNum($business_id) {
+     $stmt = $this->conn->prepare("SELECT count(*) FROM app_user WHERE business_id = ? AND fb_gender = 'Male'");
+        
+        $stmt->bind_param("i", $business_id);
+         if ($stmt->execute()) {
+            // $user = $stmt->get_result()->fetch_assoc();
+            $stmt->bind_result($count_male);
+            $stmt->fetch();
+        }
+        else {
+            return NULL;
+        }
+        return $count_male;
+    }
+
+    public function getUsersAge($business_id) {
+        $stmt = $this->conn->prepare("SELECT fb_age FROM app_user WHERE business_id = ?");
+        
+        $stmt->bind_param("i", $business_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
+
+
+    public function getMonthlyFreq($business_id){
+        $stmt = $this->conn->prepare("SELECT login_time from app_session where business_id = ? order by login_time DESC");
+        
+        $stmt->bind_param("i", $business_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
+
+    public function getVisitorTotal($business_id) {
+        $stmt = $this->conn->prepare("SELECT count(*) from app_session where business_id = ?");
+        $stmt->bind_param("i", $business_id);
+        $stmt->execute();
+        $total = $stmt->get_result();
+        $stmt->close();
+        return $total;
+    }
+
+    public function getVisitorInterests($business_id) {
+        $stmt = $this->conn->prepare("SELECT fb_interests from app_user where fb_interests != '' and business_id = ?");
+        $stmt->bind_param("i", $business_id);
+        $stmt->execute();
+        $total = $stmt->get_result();
+        $stmt->close();
+        return $total;
+    }
+
+
+    public function getAllCampaigns($business_id) {
+        $stmt = $this->conn->prepare("SELECT * from campaign where business_id = ?");
+        
+        $stmt->bind_param("i", $business_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
+
+    public function createCampaign($business_id, $user_id, $c_type, $c_hotspots, $c_views, $c_businesses, $c_interests, $c_status, $c_gender, $c_remarketing, $c_agegroup, $c_cities, $c_conversions, $c_cost) {
+        $stmt = $this->conn->prepare("INSERT INTO campaign(status, business_id, map_user_id, campaign_type, target_age_groups, target_gender, target_interests, target_cities, target_businesses, target_hotspots, target_remarketing, metric_views, metric_conversions, metric_total_cost) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->bind_param("siisssssssiiii", $c_status, intval($business_id), intval($user_id), $c_type, $c_agegroup,$c_gender,$c_interests,$c_cities,$c_businesses,$c_hotspots,intval($c_remarketing),intval($c_views),intval($c_conversions),intval($c_costs));
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
     /**
      * Fetching app user by mobile
      * @param String $email App User mobile

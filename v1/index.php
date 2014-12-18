@@ -1,5 +1,5 @@
-<?php
-
+<?php ob_start();
+session_start();
 require '../libs/Slim/Slim.php';
 require_once '../include/DbHandler.php';
 require_once '../include/PassHash.php';
@@ -139,7 +139,7 @@ $app->post('/register_login_app_user', function() use ($app) {
  */
 $app->post('/register', function() use ($app) {
             // check for required params
-            verifyRequiredParams(array('name', 'email', 'password'));
+            verifyRequiredParams(array('name', 'email', 'password', 'age', 'gender', 'city', 'country', 'businessid', 'mobile'));
 
             $response = array();
 
@@ -147,24 +147,32 @@ $app->post('/register', function() use ($app) {
             $name = $app->request->post('name');
             $email = $app->request->post('email');
             $password = $app->request->post('password');
+            $country = $app->request->post('country');
+            $age = $app->request->post('age');
+            $gender = $app->request->post('gender');
+            $city = $app->request->post('city');
+            $businessid = $app->request->post('businessid');
+            $mobile = $app->request->post('mobile');
+
 
             // validating email address
             validateEmail($email);
 
             $db = new DbHandler();
-            $res = $db->createUser($name, $email, $password);
+            $res = $db->createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile);
 
             if ($res == USER_CREATED_SUCCESSFULLY) {
                 $response["error"] = false;
                 $response["message"] = "You are successfully registered";
             } else if ($res == USER_CREATE_FAILED) {
                 $response["error"] = true;
-                $response["message"] = "Oops! An error occurred while registereing";
+                $response["message"] = "Oops! An error occurred while registering";
             } else if ($res == USER_ALREADY_EXISTED) {
                 $response["error"] = true;
                 $response["message"] = "Sorry, this email already existed";
             }
             // echo json response
+            
             echoRespnse(201, $response);
         });
 
@@ -195,6 +203,11 @@ $app->post('/login', function() use ($app) {
                     $response['email'] = $user['email'];
                     $response['apiKey'] = $user['api_key'];
                     $response['createdAt'] = $user['created_at'];
+                    $_SESSION['username'] = $user['name'];
+                    $_SESSION['email'] = $user['email'];
+                    $_SESSION['userid'] = $user['id'];
+                    $_SESSION['apikey'] = $user['api_key'];
+                    $_SESSION['businessid'] = $user['business_id'];
                 } else {
                     // unknown error occurred
                     $response['error'] = true;
@@ -213,34 +226,191 @@ $app->post('/login', function() use ($app) {
  * ------------------------ METHODS WITH AUTHENTICATION ------------------------
  */
 
+
+
+
+$app->get('/visitors/:what','authenticate',function($what) {
+    if ($what == 'gender') {
+        $response = array();
+        $db = new DbHandler();
+
+        $totalcount = $db->getTotalUsers($_SESSION['businessid']);
+        $malecount = $db->getMaleUsersNum($_SESSION['businessid']);
+        $response["error"] = false;
+        $response["stats"] = array();
+        $stats = array();
+        $stats["total"] = $totalcount;
+        $stats["male"] = $malecount;
+        $stats["female"] = $totalcount-$malecount;
+        array_push($response["stats"], $stats);
+
+    }
+    else if ($what == 'age') {
+        $response = array();
+        $db = new DbHandler();
+
+        $result = $db->getUsersAge($_SESSION['businessid']);
+        $response["error"] = false;
+        $response["stats"] = array();
+        $stats = array();
+        $stats["l15"] = 0;
+        $stats["1520"] = 0;
+        $stats["2030"] = 0;
+        $stats["g30"] = 0;
+        $total = 0;
+        while ($age = $result->fetch_assoc()) {
+
+            $total = $total + 1;
+            if ($age['fb_age']<15) {
+                $stats["l15"]++;
+            }
+            else if ($age['fb_age'] < 20 && $age['fb_age'] >= 15) {
+                $stats["1520"]++;
+            }
+            else if ($age['fb_age'] < 30 && $age['fb_age'] >= 20) {
+                $stats["2030"]++;
+            }
+            else if ($age['fb_age'] >= 30) {
+                $stats["g30"]++;
+            }
+            // array_push($response, $age);
+        }
+        $stats["total"] = $total;
+        array_push($response["stats"], $stats);
+    }
+    else if ($what == 'monthly') {
+        $response = array();
+        $db = new DbHandler();
+
+        $result = $db->getMonthlyFreq($_SESSION['businessid']);
+        $response["error"] = false;
+        $response["stats"] = array();
+        $stats = array();
+        while ($item = $result->fetch_assoc()) {
+            $date = explode(' ', $item["login_time"])[0];
+            $month = explode('-', $date)[1];
+            if ($stats[$month]) {
+                $stats[$month]++;
+            }
+            else {
+                $stats[$month] = 1;
+            }
+        }
+        array_push($response["stats"], $stats);
+    }
+    else if ($what == 'total') {
+        $response = array();
+        $db = new DbHandler();
+
+        $result = $db->getVisitorTotal($_SESSION['businessid']);
+        $response["error"] = false;
+        $response["stats"] = array();
+        $stats = array();
+        while ($item = $result->fetch_assoc()) {
+            $stats["total"] = $item["count(*)"];
+        }
+        array_push($response["stats"], $stats);
+    }
+    else if ($what == 'interests') {
+        $response = array();
+        $db = new DbHandler();
+
+        $result = $db->getVisitorInterests($_SESSION['businessid']);
+        $response["error"] = false;
+        $response["stats"] = array();
+        $stats = array();
+        while ($item = $result->fetch_assoc()) {
+            $interest = explode(',', $item["fb_interests"])[0];
+            if ($stats[$interest]) {
+                $stats[$interst]++;
+            }
+            else {
+                $stats[$interest] = 1;
+            }
+        }
+        array_push($response["stats"], $stats);
+    }
+    echoRespnse(200, $response);
+});
+
+
+$app->get('/allcampaigns', 'authenticate', function() {
+    $response = array();
+    $db = new DbHandler();
+
+    $result = $db->getAllCampaigns($_SESSION['businessid']);
+    $response["error"] = false;
+    $response["details"] = array();
+    $list = array();
+    while ($item = $result->fetch_assoc()) {
+        array_push($list, $item);
+    }
+    array_push($response["details"], $list);
+    echoRespnse(200, $response);
+});
+
+
+$app->post('/addcampaign', 'authenticate', function() use ($app) {
+
+            verifyRequiredParams(array('c_type'));
+
+            $response = array();
+            $c_type = $app->request->post('c_type');
+            $c_status = $app->request->post('c_status');
+            $c_agegroup = $app->request->post('c_agegroup');
+            $c_gender = $app->request->post('c_gender');
+            $c_interests = $app->request->post('c_interests');
+            $c_cities = $app->request->post('c_cities');
+            $c_businesses = $app->request->post('c_businesses');
+            $c_hotspots = $app->request->post('c_hotspots');
+            $c_remarketing = $app->request->post('c_remarketing');
+            $c_views = $app->request->post('c_views');
+            $c_conversions = $app->request->post('c_conversions');
+            $c_cost = $app->request->post('c_cost');
+
+            $db = new DbHandler();
+            $user_id = $db->getUserId($_SESSION['apikey']);
+            $campaign_id = $db->createCampaign($_SESSION['businessid'], $user_id, $c_type, $c_hotspots, $c_views, $c_businesses, $c_interests, $c_status, $c_gender, $c_remarketing, $c_agegroup, $c_cities, $c_conversions, $c_cost);
+
+            // if ($campaign_id != NULL) {
+                $response["error"] = false;
+                $response["message"] = "Campaign created successfully";
+                $response["campaign_id"] = $campaign_id;
+                // echoRespnse(201, $response);
+            // } else {
+                // $response["error"] = true;
+                // $response["message"] = "Failed to create campaign. Please try again";
+                echoRespnse(200, $response);
+            // }            
+        });
 /**
  * Listing all tasks of particual user
  * method GET
  * url /tasks          
  */
-$app->get('/tasks', 'authenticate', function() {
-            global $user_id;
-            $response = array();
-            $db = new DbHandler();
+// $app->get('/tasks', 'authenticate', function() {
+//             global $user_id;
+//             $response = array();
+//             $db = new DbHandler();
 
-            // fetching all user tasks
-            $result = $db->getAllUserTasks($user_id);
+//             // fetching all user tasks
+//             $result = $db->getAllUserTasks($user_id);
 
-            $response["error"] = false;
-            $response["tasks"] = array();
+//             $response["error"] = false;
+//             $response["tasks"] = array();
 
-            // looping through result and preparing tasks array
-            while ($task = $result->fetch_assoc()) {
-                $tmp = array();
-                $tmp["id"] = $task["id"];
-                $tmp["task"] = $task["task"];
-                $tmp["status"] = $task["status"];
-                $tmp["createdAt"] = $task["created_at"];
-                array_push($response["tasks"], $tmp);
-            }
+//             // looping through result and preparing tasks array
+//             while ($task = $result->fetch_assoc()) {
+//                 $tmp = array();
+//                 $tmp["id"] = $task["id"];
+//                 $tmp["task"] = $task["task"];
+//                 $tmp["status"] = $task["status"];
+//                 $tmp["createdAt"] = $task["created_at"];
+//                 array_push($response["tasks"], $tmp);
+//             }
 
-            echoRespnse(200, $response);
-        });
+//             echoRespnse(200, $response);
+//         });
 
 /**
  * Listing single task of particual user
@@ -248,27 +418,27 @@ $app->get('/tasks', 'authenticate', function() {
  * url /tasks/:id
  * Will return 404 if the task doesn't belongs to user
  */
-$app->get('/tasks/:id', 'authenticate', function($task_id) {
-            global $user_id;
-            $response = array();
-            $db = new DbHandler();
+// $app->get('/tasks/:id', 'authenticate', function($task_id) {
+//             global $user_id;
+//             $response = array();
+//             $db = new DbHandler();
 
-            // fetch task
-            $result = $db->getTask($task_id, $user_id);
+//             // fetch task
+//             $result = $db->getTask($task_id, $user_id);
 
-            if ($result != NULL) {
-                $response["error"] = false;
-                $response["id"] = $result["id"];
-                $response["task"] = $result["task"];
-                $response["status"] = $result["status"];
-                $response["createdAt"] = $result["created_at"];
-                echoRespnse(200, $response);
-            } else {
-                $response["error"] = true;
-                $response["message"] = "The requested resource doesn't exists";
-                echoRespnse(404, $response);
-            }
-        });
+//             if ($result != NULL) {
+//                 $response["error"] = false;
+//                 $response["id"] = $result["id"];
+//                 $response["task"] = $result["task"];
+//                 $response["status"] = $result["status"];
+//                 $response["createdAt"] = $result["created_at"];
+//                 echoRespnse(200, $response);
+//             } else {
+//                 $response["error"] = true;
+//                 $response["message"] = "The requested resource doesn't exists";
+//                 echoRespnse(404, $response);
+//             }
+//         });
 
 /**
  * Creating new task in db
@@ -276,30 +446,30 @@ $app->get('/tasks/:id', 'authenticate', function($task_id) {
  * params - name
  * url - /tasks/
  */
-$app->post('/tasks', 'authenticate', function() use ($app) {
-            // check for required params
-            verifyRequiredParams(array('task'));
+// $app->post('/tasks', 'authenticate', function() use ($app) {
+//             // check for required params
+//             verifyRequiredParams(array('task'));
 
-            $response = array();
-            $task = $app->request->post('task');
+//             $response = array();
+//             $task = $app->request->post('task');
 
-            global $user_id;
-            $db = new DbHandler();
+//             global $user_id;
+//             $db = new DbHandler();
 
-            // creating new task
-            $task_id = $db->createTask($user_id, $task);
+//             // creating new task
+//             $task_id = $db->createTask($user_id, $task);
 
-            if ($task_id != NULL) {
-                $response["error"] = false;
-                $response["message"] = "Task created successfully";
-                $response["task_id"] = $task_id;
-                echoRespnse(201, $response);
-            } else {
-                $response["error"] = true;
-                $response["message"] = "Failed to create task. Please try again";
-                echoRespnse(200, $response);
-            }            
-        });
+//             if ($task_id != NULL) {
+//                 $response["error"] = false;
+//                 $response["message"] = "Task created successfully";
+//                 $response["task_id"] = $task_id;
+//                 echoRespnse(201, $response);
+//             } else {
+//                 $response["error"] = true;
+//                 $response["message"] = "Failed to create task. Please try again";
+//                 echoRespnse(200, $response);
+//             }            
+//         });
 
 /**
  * Updating existing task
@@ -307,53 +477,53 @@ $app->post('/tasks', 'authenticate', function() use ($app) {
  * params task, status
  * url - /tasks/:id
  */
-$app->put('/tasks/:id', 'authenticate', function($task_id) use($app) {
-            // check for required params
-            verifyRequiredParams(array('task', 'status'));
+// $app->put('/tasks/:id', 'authenticate', function($task_id) use($app) {
+//             // check for required params
+//             verifyRequiredParams(array('task', 'status'));
 
-            global $user_id;            
-            $task = $app->request->put('task');
-            $status = $app->request->put('status');
+//             global $user_id;            
+//             $task = $app->request->put('task');
+//             $status = $app->request->put('status');
 
-            $db = new DbHandler();
-            $response = array();
+//             $db = new DbHandler();
+//             $response = array();
 
-            // updating task
-            $result = $db->updateTask($user_id, $task_id, $task, $status);
-            if ($result) {
-                // task updated successfully
-                $response["error"] = false;
-                $response["message"] = "Task updated successfully";
-            } else {
-                // task failed to update
-                $response["error"] = true;
-                $response["message"] = "Task failed to update. Please try again!";
-            }
-            echoRespnse(200, $response);
-        });
+//             // updating task
+//             $result = $db->updateTask($user_id, $task_id, $task, $status);
+//             if ($result) {
+//                 // task updated successfully
+//                 $response["error"] = false;
+//                 $response["message"] = "Task updated successfully";
+//             } else {
+//                 // task failed to update
+//                 $response["error"] = true;
+//                 $response["message"] = "Task failed to update. Please try again!";
+//             }
+//             echoRespnse(200, $response);
+//         });
 
 /**
  * Deleting task. Users can delete only their tasks
  * method DELETE
  * url /tasks
  */
-$app->delete('/tasks/:id', 'authenticate', function($task_id) use($app) {
-            global $user_id;
+// $app->delete('/tasks/:id', 'authenticate', function($task_id) use($app) {
+//             global $user_id;
 
-            $db = new DbHandler();
-            $response = array();
-            $result = $db->deleteTask($user_id, $task_id);
-            if ($result) {
-                // task deleted successfully
-                $response["error"] = false;
-                $response["message"] = "Task deleted succesfully";
-            } else {
-                // task failed to delete
-                $response["error"] = true;
-                $response["message"] = "Task failed to delete. Please try again!";
-            }
-            echoRespnse(200, $response);
-        });
+//             $db = new DbHandler();
+//             $response = array();
+//             $result = $db->deleteTask($user_id, $task_id);
+//             if ($result) {
+//                 // task deleted successfully
+//                 $response["error"] = false;
+//                 $response["message"] = "Task deleted succesfully";
+//             } else {
+//                 // task failed to delete
+//                 $response["error"] = true;
+//                 $response["message"] = "Task failed to delete. Please try again!";
+//             }
+//             echoRespnse(200, $response);
+//         });
 
 /**
  * Verifying required params posted or not
@@ -427,6 +597,7 @@ function echoRespnse($status_code, $response) {
     $app->contentType('application/json');
 
     echo json_encode($response);
+
 }
 
 
