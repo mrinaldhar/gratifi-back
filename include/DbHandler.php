@@ -344,6 +344,32 @@ class DbHandler {
         $stmt->close();
         return $result;
     }
+
+    public function getCampaign($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM campaign where id = ? LIMIT 1");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
+
+    public function addBusiness($name, $address, $city, $contact) {
+        $stmt = $this->conn->prepare("INSERT INTO business(address, city, name, contact) VALUES (?,?,?,?)");
+        $stmt->bind_param("sssi", $name, $address, $city, intval($contact));
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+
+    public function allBusinesses() {
+        $stmt = $this->conn->prepare("SELECT * FROM business");
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
+
     /**
      * Fetching app user by mobile
      * @param String $email App User mobile

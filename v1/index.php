@@ -350,6 +350,46 @@ $app->get('/allcampaigns', 'authenticate', function() {
 });
 
 
+$app->get('/campaign/:id', function($id) {
+    // verifyRequiredParams(array('id'));
+    $response = array();
+    $db = new DbHandler();
+    $result = $db->getCampaign($id);
+	$response["error"] = false;
+	$response["result"] = array();
+	while ($item = $result->fetch_assoc()) {
+		array_push($response["result"], $item);
+	}
+	// echoRespnse(200,$response);
+	echo 'hi';
+});
+
+$app->post('/addbusiness', function() use ($app) {
+	verifyRequiredParams(array('address', 'city', 'name', 'contact'));
+	$response = array();
+	$name = $app->request->post('name');
+	$address = $app->request->post('address');
+	$city = $app->request->post('city');
+	$contact = $app->request->post('contact');
+	$db = new DbHandler();
+	$result = $db->addBusiness($name, $address, $city, $contact);
+	$response["error"] = false;
+	$response["message"] = "Business added successfully.";
+	echoRespnse(201,$response);
+});
+
+$app->get('/businesses', function() {
+$response = array();
+    $db = new DbHandler();
+    $result = $db->allBusinesses();
+	$response["error"] = false;
+	$response["result"] = array();
+	while ($item = $result->fetch_assoc()) {
+		array_push($response["result"], $item);
+	}
+	echoRespnse(200,$response);
+});
+
 $app->post('/addcampaign', 'authenticate', function() use ($app) {
 
             verifyRequiredParams(array('c_type'));
@@ -380,7 +420,7 @@ $app->post('/addcampaign', 'authenticate', function() use ($app) {
             // } else {
                 // $response["error"] = true;
                 // $response["message"] = "Failed to create campaign. Please try again";
-                echoRespnse(200, $response);
+                echoRespnse(201, $response);
             // }            
         });
 /**
