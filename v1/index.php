@@ -289,11 +289,12 @@ $app->get('/visitors/:what','authenticate',function($what) {
         while ($item = $result->fetch_assoc()) {
             $date = explode(' ', $item["login_time"])[0];
             $month = explode('-', $date)[1];
-            if ($stats[$month]) {
-                $stats[$month]++;
+            $year = explode('-', $date)[0];
+            if ($stats[$year.'-'.$month]) {
+                $stats[$year.'-'.$month]++;
             }
             else {
-                $stats[$month] = 1;
+                $stats[$year.'-'.$month] = 1;
             }
         }
         array_push($response["stats"], $stats);
@@ -321,6 +322,8 @@ $app->get('/visitors/:what','authenticate',function($what) {
         $stats = array();
         while ($item = $result->fetch_assoc()) {
             $interest = explode(',', $item["fb_interests"])[0];
+            if ($interest!= '')
+            {
             if ($stats[$interest]) {
                 $stats[$interst]++;
             }
@@ -328,7 +331,49 @@ $app->get('/visitors/:what','authenticate',function($what) {
                 $stats[$interest] = 1;
             }
         }
+        }
         array_push($response["stats"], $stats);
+    }
+    else if ($what == 'timesamonth') {
+    	$response = array();
+    	$db = new DbHandler();
+
+    	$result = $db->timesamonth($_SESSION['businessid']);
+    	$response["error"]= false;
+    	$response["stats"] = array();
+    	$stats = array();
+    	$currmonth = 'notset';
+    	$total = 0;
+
+    	while ($item = $result->fetch_assoc()) {
+    		$date = explode(' ', $item["login_time"])[0];
+    		$date = explode('-', $date);
+    		$month = $date[1];
+    		$year = $date[0];
+    		$month = $year.'-'.$month;
+    		if ($currmonth == 'notset') {
+    			$currmonth = $month;
+    			if ($stats[$item["app_user_id"]])
+    			{
+    			$stats[$item["app_user_id"]]++;
+    			}
+    			else {
+    				$stats[$item["app_user_id"]] = 1;
+    			}
+    		}
+    		else {
+    			if ($month == $currmonth) {
+    				if ($stats[$item["app_user_id"]])
+    			{
+    			$stats[$item["app_user_id"]]++;
+    			}
+    			else {
+    				$stats[$item["app_user_id"]] = 1;
+    			}
+    			}
+    		}
+    	}
+    	array_push($response["stats"], $stats);
     }
     echoRespnse(200, $response);
 });
@@ -389,6 +434,7 @@ $response = array();
 	}
 	echoRespnse(200,$response);
 });
+
 
 $app->post('/addcampaign', 'authenticate', function() use ($app) {
 

@@ -299,7 +299,7 @@ class DbHandler {
 
 
     public function getMonthlyFreq($business_id){
-        $stmt = $this->conn->prepare("SELECT login_time from app_session where business_id = ? order by login_time DESC");
+        $stmt = $this->conn->prepare("SELECT login_time from app_session where business_id = ? order by login_time ASC");
         
         $stmt->bind_param("i", $business_id);
         $stmt->execute();
@@ -370,6 +370,14 @@ class DbHandler {
         return $result;
     }
 
+    public function timesamonth($business_id) {
+        $stmt = $this->conn->prepare("SELECT * FROM app_session WHERE business_id = ? ORDER BY login_time DESC");
+        $stmt->bind_param("i", $business_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
     /**
      * Fetching app user by mobile
      * @param String $email App User mobile
