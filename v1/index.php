@@ -435,22 +435,34 @@ $response = array();
 	echoRespnse(200,$response);
 });
 
-
+$app->get('/hotspots', 'authenticate', function() use ($app) {
+        $response = array();
+        $db = new DbHandler();
+        $response["error"] = false;
+        $response["list"] = array();
+        $list = array();
+        $result = $db->allHotspots($_SESSION['businessid']);
+        while ($item = $result->fetch_assoc()) {
+            array_push($list, $item["ssid"].'+'.$item["id"]);
+        }
+        array_push($response["list"], $list);
+        echoRespnse(200, $response);
+});
 $app->post('/addcampaign', 'authenticate', function() use ($app) {
 
             verifyRequiredParams(array('c_type'));
 
             $response = array();
             $c_type = $app->request->post('c_type');
-            $c_status = $app->request->post('c_status');
+            $c_status = 'Running';
             $c_agegroup = $app->request->post('c_agegroup');
             $c_gender = $app->request->post('c_gender');
             $c_interests = $app->request->post('c_interests');
             $c_cities = $app->request->post('c_cities');
-            $c_businesses = $app->request->post('c_businesses');
-            $c_hotspots = $app->request->post('c_hotspots');
-            $c_remarketing = $app->request->post('c_remarketing');
-            $c_views = $app->request->post('c_views');
+            $c_businesses = 'default';
+            $c_hotspots = "hi";
+            $c_remarketing = 1;
+            $c_views = 0;
             $c_conversions = $app->request->post('c_conversions');
             $c_cost = $app->request->post('c_cost');
 

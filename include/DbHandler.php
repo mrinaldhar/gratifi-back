@@ -378,6 +378,15 @@ class DbHandler {
         $stmt->close();
         return $result;
     }
+
+    public function allHotspots($business_id) {
+        $stmt = $this->conn->prepare("SELECT id, ssid from hotspot WHERE business_id = ?");
+        $stmt->bind_param("i", intval($business_id));
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;
+    }
     /**
      * Fetching app user by mobile
      * @param String $email App User mobile
