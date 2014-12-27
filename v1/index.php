@@ -399,14 +399,22 @@ $app->get('/campaign/:id', function($id) {
     // verifyRequiredParams(array('id'));
     $response = array();
     $db = new DbHandler();
-    $result = $db->getCampaign($id);
+    $result = $db->getcampaign($id);
 	$response["error"] = false;
 	$response["result"] = array();
 	while ($item = $result->fetch_assoc()) {
 		array_push($response["result"], $item);
 	}
-	// echoRespnse(200,$response);
-	echo 'hi';
+	echoRespnse(200,$response);
+	// echo 'hi';
+});
+
+$app->delete('/campaign/:id', 'authenticate', function($id) {
+$response = array();
+    $db = new DbHandler();
+    $result = $db->deleteCampaign($id, $_SESSION['businessid']);
+    $response["error"] = false;
+    echoRespnse(200, $result);
 });
 
 $app->post('/addbusiness', function() use ($app) {
@@ -465,10 +473,22 @@ $app->post('/addcampaign', 'authenticate', function() use ($app) {
             $c_views = 0;
             $c_conversions = $app->request->post('c_conversions');
             $c_cost = $app->request->post('c_cost');
+            
+            $link = $app->request->post('link');
+            $msg = $app->request->post('msg');
+            $question = $app->request->post('question');
+            $linkfb = $app->request->post('linkfb');
+            $linkplay = $app->request->post('linkplay');
+            $opt1 = $app->request->post('opt1');
+            $opt2 = $app->request->post('opt2');
+            $opt3 = $app->request->post('opt3');
+            $imgurl = $app->request->post('imgurl');
+            $logourl = $app->request->post('logourl');
+            $videourl = $app->request->post('videourl');
 
             $db = new DbHandler();
             $user_id = $db->getUserId($_SESSION['apikey']);
-            $campaign_id = $db->createCampaign($_SESSION['businessid'], $user_id, $c_type, $c_hotspots, $c_views, $c_businesses, $c_interests, $c_status, $c_gender, $c_remarketing, $c_agegroup, $c_cities, $c_conversions, $c_cost);
+            $campaign_id = $db->createCampaign($_SESSION['businessid'], $user_id, $c_type, $c_hotspots, $c_views, $c_businesses, $c_interests, $c_status, $c_gender, $c_remarketing, $c_agegroup, $c_cities, $c_conversions, $c_cost, $link, $msg, $question, $linkfb, $linkplay, $opt1, $opt2, $opt3, $imgurl, $logourl, $videourl);
 
             // if ($campaign_id != NULL) {
                 $response["error"] = false;
