@@ -139,7 +139,7 @@ $app->post('/register_login_app_user', function() use ($app) {
  */
 $app->post('/register', function() use ($app) {
             // check for required params
-            verifyRequiredParams(array('name', 'email', 'password', 'age', 'gender', 'city', 'country', 'businessid', 'mobile'));
+            verifyRequiredParams(array('name', 'email', 'password', 'age', 'gender', 'city', 'country', 'mobile', 'exist_business'));
 
             $response = array();
 
@@ -151,15 +151,27 @@ $app->post('/register', function() use ($app) {
             $age = $app->request->post('age');
             $gender = $app->request->post('gender');
             $city = $app->request->post('city');
-            $businessid = $app->request->post('businessid');
+            
             $mobile = $app->request->post('mobile');
+            $exist_business = $app->request->post('exist_business');
 
 
             // validating email address
             validateEmail($email);
 
             $db = new DbHandler();
+
+            if ($exist_business == 'Existing Business') {
+            $businessid = $app->request->post('businessid');
             $res = $db->createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile);
+
+            }
+            else if ($exist_business == 'New Business') {
+
+            $res = $db->createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile);
+
+
+            }
 
             if ($res == USER_CREATED_SUCCESSFULLY) {
                 $response["error"] = false;
@@ -205,7 +217,7 @@ $app->post('/login', function() use ($app) {
                     $response['createdAt'] = $user['created_at'];
                     $_SESSION['username'] = $user['name'];
                     $_SESSION['email'] = $user['email'];
-                    $_SESSION['userid'] = $user['id'];
+                    // $_SESSION['userid'] = $user['id'];
                     $_SESSION['apikey'] = $user['api_key'];
                     $_SESSION['businessid'] = $user['business_id'];
                 } else {
@@ -405,8 +417,35 @@ $app->get('/campaign/:id', function($id) {
 	while ($item = $result->fetch_assoc()) {
 		array_push($response["result"], $item);
 	}
-	echoRespnse(200,$response);
-	// echo 'hi';
+	// echoRespnse(200,$response);
+	// $headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1"></head>';
+    $headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="http://localhost/~sankaul/g/gratifi/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"></head>';
+    
+    $obj = json_encode($response["result"][0]);
+    $obj = json_decode($obj);
+    if ($obj->campaign_type == 'Video') {
+    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;"><a href="'.$obj->video.'"><button class="btn btn-primary" style="margin-top:40px;">Watch a cool video!</button></a></p></div></body>';
+    
+    }
+    else if ($obj->campaign_type == 'Interstitial') {
+    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->link.'"><button class="btn btn-primary" style="margin-top:40px;">Check in to this place on Facebook!</button></a></p></div></body>';
+    
+    }
+    else if ($obj->campaign_type == 'Feedback Form') {
+        
+    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; margin-left:auto; margin-right:auto; width:65%;" /><br /><p style="font-size:1.7em; margin:20px; text-align:center;">'.$obj->question.'<br /><a href="submitform.php"><button class="btn btn-primary" style="margin-top:40px;">'.$obj->opt1.'</button></a><br /><a href="submitform.php"><button class="btn btn-primary" style="margin-top:40px;">'.$obj->opt2.'</button></a><br /><a href="submitform.php"><button class="btn btn-primary" style="margin-top:40px;">'.$obj->opt3.'</button></a></p></div></body>';
+    
+    }
+    else if ($obj->campaign_type == 'FB Page') {
+    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->fbpage.'"><button class="btn btn-primary" style="margin-top:40px;">Visit our Facebook Page!</button></a></p></div></body>';
+        
+    }
+    else if ($obj->campaign_type == 'App Download') {
+        
+    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->playstore.'"><button class="btn btn-primary" style="margin-top:40px;">Download app from Google Playstore!</button></a></p></div></body>';
+    }
+    $tailpart = '</html>';
+    echo $headpart . $body . $tailpart;
 });
 
 $app->delete('/campaign/:id', 'authenticate', function($id) {
