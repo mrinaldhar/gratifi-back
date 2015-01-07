@@ -339,7 +339,7 @@ class DbHandler {
 
     public function createCampaign($business_id, $user_id, $c_type, $c_hotspots, $c_views, $c_businesses, $c_interests, $c_status, $c_gender, $c_remarketing, $c_agegroup, $c_cities, $c_conversions, $c_cost, $link, $msg, $question, $linkfb, $linkplay, $opt1, $opt2, $opt3, $imgurl, $logourl, $videourl) {
         $stmt = $this->conn->prepare("INSERT INTO campaign(status, business_id, map_user_id, campaign_type, target_age_groups, target_gender, target_interests, target_cities, target_businesses, target_hotspots, target_remarketing, metric_views, metric_conversions, metric_total_cost, link, message, question, fbpage, playstore, opt1, opt2, opt3, image, logo, video) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-        $stmt->bind_param("siisssssssiiiisssssssssss", $c_status, intval($business_id), intval($user_id), $c_type, $c_agegroup,$c_gender,$c_interests,$c_cities,$c_businesses,$c_hotspots,intval($c_remarketing),intval($c_views),intval($c_conversions),intval($c_costs), $link, $msg, $question, $linkfb, $linkplay, $opt1, $opt2, $opt3, $imgurl, $logourl, $videourl);
+        $stmt->bind_param("siisssssssiiiisssssssssss", $c_status, intval($business_id), intval($user_id), $c_type, $c_agegroup,$c_gender,$c_interests,$c_cities,$c_businesses,$c_hotspots,intval($c_remarketing),intval($c_views),intval($c_conversions),intval($c_cost), $link, $msg, $question, $linkfb, $linkplay, $opt1, $opt2, $opt3, $imgurl, $logourl, $videourl);
         $result = $stmt->execute();
         $stmt->close();
         return $result;

@@ -302,7 +302,7 @@ $app->get('/visitors/:what','authenticate',function($what) {
             $date = explode(' ', $item["login_time"])[0];
             $month = explode('-', $date)[1];
             $year = explode('-', $date)[0];
-            if ($stats[$year.'-'.$month]) {
+            if (array_key_exists($year.'-'.$month, $stats)) {
                 $stats[$year.'-'.$month]++;
             }
             else {
@@ -336,8 +336,8 @@ $app->get('/visitors/:what','authenticate',function($what) {
             $interest = explode(',', $item["fb_interests"])[0];
             if ($interest!= '')
             {
-            if ($stats[$interest]) {
-                $stats[$interst]++;
+            if (array_key_exists($interest, $stats)) {
+                $stats[$interest]++;
             }
             else {
                 $stats[$interest] = 1;
@@ -365,7 +365,7 @@ $app->get('/visitors/:what','authenticate',function($what) {
     		$month = $year.'-'.$month;
     		if ($currmonth == 'notset') {
     			$currmonth = $month;
-    			if ($stats[$item["app_user_id"]])
+    			if (array_key_exists($item["app_user_id"], $stats))
     			{
     			$stats[$item["app_user_id"]]++;
     			}
@@ -375,7 +375,7 @@ $app->get('/visitors/:what','authenticate',function($what) {
     		}
     		else {
     			if ($month == $currmonth) {
-    				if ($stats[$item["app_user_id"]])
+    				if (array_key_exists($item["app_user_id"], $stats))
     			{
     			$stats[$item["app_user_id"]]++;
     			}
@@ -418,8 +418,8 @@ $app->get('/campaign/:id', function($id) {
 		array_push($response["result"], $item);
 	}
 	// echoRespnse(200,$response);
-	// $headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1"></head>';
-    $headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="http://localhost/~sankaul/g/gratifi/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"></head>';
+	$headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1"></head>';
+    // $headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="http://localhost/~sankaul/g/gratifi/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"></head>';
     
     $obj = json_encode($response["result"][0]);
     $obj = json_decode($obj);
