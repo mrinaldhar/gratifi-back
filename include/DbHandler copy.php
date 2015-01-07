@@ -28,37 +28,37 @@ class DbHandler {
     public function createOTP($mobile, $otp) {        
         $response = array();
         
-        // insert query
-        $stmt = $this->conn->prepare("INSERT INTO otp(mobile, otp) values(?, ?)");
-        $stmt->bind_param("ii", $mobile, $otp);
+		// insert query
+		$stmt = $this->$conn->prepare("INSERT INTO otp(mobile, otp) values(?, ?)");
+		$stmt->bind_param("ii", $mobile, $otp);
 
-        $result = $stmt->execute();
+		$result = $stmt->execute();
 
-        $stmt->close();
+		$stmt->close();
 
-        // Check for successful insertion
-        if ($result) {
-            // User successfully inserted
-            return OTP_CREATED_SUCCESSFULLY;
-        } else {
-            // Failed to create user
-            return OTP_CREATE_FAILED;
-        }
+		// Check for successful insertion
+		if ($result) {
+			// User successfully inserted
+			return OTP_CREATED_SUCCESSFULLY;
+		} else {
+			// Failed to create user
+			return OTP_CREATE_FAILED;
+		}
 
         return $response;
     }
-    
-    /**
+	
+	/**
      * Creating new App user
      * @param String $mobile Mobile number
      * @param String $otp OTP     
      */
     public function createAppUser($mobile, $otp) {        
         $response = array();
-        
-        if(!$this->verifyOTP($mobile, $otp)){
-            return APP_USER_CREATE_FAILED;
-        }
+		
+		if(!$this->verifyOTP($mobile, $otp)){
+			return APP_USER_CREATE_FAILED;
+		}
 
         // First check if user already existed in db
         if (!$this->isAppUserExists($mobile)) {
@@ -90,198 +90,7 @@ class DbHandler {
         return $response;
     }
 
-    /**
-     * Fetching app user info
-     * @param String $mobile of the user
-     */
-    public function getAppUserInfo($user_id) {
-        $stmt = $this->conn->prepare("SELECT u.mobile, u.fb_first_name, u.fb_last_name from app_user u WHERE u.id = ?");
-        $stmt->bind_param("i", $user_id);
-        if ($stmt->execute()) {
-            $res = array();
-            $stmt->bind_result($mobile, $fb_first_name, $fb_last_name);
-            // TODO
-            // $task = $stmt->get_result()->fetch_assoc();
-            $stmt->fetch();
-            $res["mobile"] = $mobile;
-            $res["fb_first_name"] = $fb_first_name;
-            $res["fb_last_name"] = $fb_last_name;            
-            $stmt->close();
-            return $res;
-        } else {
-            return NULL;
-        }
-    }
-
-    /**
-     * Fetching campaign link
-     * @param String $mobile of the user
-     */
-    public function getCampaignLink($user_id, $location_id) {   
-        $hotspot_id = $this->getHotspotId($location_id);
-        if($hotspot_id != NULL){            
-            $stmt1 = $this->conn->prepare("SELECT c.id, c.http_link from campaign c WHERE c.target_hotspots = ?");
-            $stmt1->bind_param("i", $hotspot_id);
-            if ($stmt1->execute()) {
-                $res = array();
-                $stmt1->bind_result($campaign_id, $campaign_link);
-                // TODO
-                // $task = $stmt->get_result()->fetch_assoc();
-                $stmt1->fetch();
-                $res["campaign_id"] = $campaign_id;
-                $res["campaign_link"] = $campaign_link;             
-                $stmt1->close();                
-                return $res;
-            } else {
-                return NULL;
-            }            
-        } else {
-            return NULL;
-        }
-    }
-    
-    /**
-     * Fetching hotspot info
-     * @param String $user_id, $location_id
-     */
-    public function getHotspotInfo($user_id, $location_id) {    
-        $hotspot_id = $this->getHotspotId($location_id);
-        if($hotspot_id != NULL){            
-            $stmt1 = $this->conn->prepare("SELECT h.business_id, h.login_url, h.login_user, h.login_password_hash from hotspot h WHERE h.id = ?");
-            $stmt1->bind_param("i", $hotspot_id);
-            if ($stmt1->execute()) {
-                $res = array();
-                $stmt1->bind_result($business_id, $login_url, $login_user, $login_password_hash);
-                // TODO
-                // $task = $stmt->get_result()->fetch_assoc();
-                $stmt1->fetch();
-                $res["business_id"] = $business_id;
-                $res["login_url"] = $login_url;
-                $res["login_user"] = $login_user;
-                $res["login_password_hash"] = $login_password_hash;
-                $stmt1->close();                
-                return $res;
-            } else {
-                return NULL;
-            }            
-        } else {
-            return NULL;
-        }
-    }
-    
-    /**
-     * Updating App User Info
-     * @param String $fb_first_name, $fb_last_name, $fb_email, $fb_id, $fb_age, $fb_gender, $fb_city, $fb_country
-     */
-    public function updateAppUserInfo($user_id, $fb_first_name, $fb_last_name, $fb_email, $fb_id, $fb_age, $fb_gender, $fb_city, $fb_country) {
-        $stmt = $this->conn->prepare("UPDATE app_user u set u.fb_first_name = ?, u.fb_last_name = ?, u.fb_email = ?, u.fb_id = ?, 
-            u.fb_age = ?, u.fb_gender = ?, u.fb_city = ?, u.fb_country = ? WHERE u.id = ?");
-        $stmt->bind_param("ssssisssi", $fb_first_name, $fb_last_name, $fb_email, $fb_id, $fb_age, $fb_gender, $fb_city, $fb_country, $user_id);
-        $stmt->execute();
-        $num_affected_rows = $stmt->affected_rows;
-        $stmt->close();
-        return $num_affected_rows > 0;
-    }   
-    
-    
-    /**
-     * Creating new app session
-     * @param String $user_id user id
-     * @param String $location_id
-     */
-    public function createAppSession($user_id, $location_id) {
-        $hotspot_id = $this->getHotspotId($location_id);        
-        if($hotspot_id != NULL){    
-            $stmt = $this->conn->prepare("INSERT INTO app_session(app_user_id, hotspot_id) values(?,?)");
-            $stmt->bind_param("ii", $user_id, $hotspot_id);
-            $result = $stmt->execute();
-            $stmt->close();
-
-            return $result;
-        }
-        else{
-            return 0;
-        }
-    }
-    
-    /**
-     * Insert Campaign Activity
-     * @param Int $user_id
-     * @param Int $campaign_id
-     */
-    public function postCampaignActivity($user_id, $campaign_id) {               
-        // insert query
-        $stmt = $this->conn->prepare("INSERT INTO campaign_activity(app_user_id, campaign_id, view, conversion, cost) values(?, ?, 1, 1, 0)");
-        $stmt->bind_param("ii", $user_id, $campaign_id);
-        $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
-    }
-
-    
-    /**
-     * Checking for duplicate app user by mobile
-     * @param String $mobile mobile to check in db
-     * @return boolean
-     */
-    private function isAppUserExists($mobile) {
-        $stmt = $this->conn->prepare("SELECT id from app_user WHERE mobile = ?");       
-        $stmt->bind_param("s", $mobile);
-        $stmt->execute();
-        $stmt->store_result();
-        $num_rows = $stmt->num_rows;
-        $stmt->close();
-        return $num_rows > 0;
-    }
-
-    
-    /**
-     * Verifying OTP
-     * @param String $mobile Mobile to check for OTP
-     * @param String $otp OTP to compare
-     * @return boolean
-     */
-    private function verifyOTP($mobile, $otp) {
-        $stmt = $this->conn->prepare("SELECT otp from otp WHERE mobile = ?");       
-        $stmt->bind_param("i", $mobile);
-        $stmt->execute();
-        $stmt->bind_result($savedOTP);
-        $stmt->store_result();
-        
-        while($stmt->fetch()) {
-            if($otp == (string)$savedOTP){
-                return true;
-            }
-        }
-        
-        $stmt->close();
-        
-        return false;       
-    }
-    
-    /**
-     * Get Hotspot id
-     * @param String $location_id
-     * @return hotspot_id
-     */
-    private function getHotspotId($location_id) {
-        $stmt = $this->conn->prepare("SELECT h.hotspot_id from hotspot_map h WHERE h.bssid = ?");        
-        $stmt->bind_param("s", $location_id);
-        if ($stmt->execute()) {            
-            $stmt->bind_result($hotspot_id);
-            // TODO
-            // $task = $stmt->get_result()->fetch_assoc();
-            $stmt->fetch();                     
-            $stmt->close();
-            
-            return $hotspot_id;        
-        } else {
-            return NULL;
-        }
-    }
-    
-    
+	
 	
 	/**
      * Creating new user
@@ -383,8 +192,46 @@ class DbHandler {
         return $num_rows > 0;
     }
 
-	
+	/**
+     * Checking for duplicate app user by mobile
+     * @param String $mobile mobile to check in db
+     * @return boolean
+     */
+    private function isAppUserExists($mobile) {
+        $stmt = $this->conn->prepare("SELECT id from app_user WHERE mobile = ?");		
+        $stmt->bind_param("s", $mobile);
+        $stmt->execute();
+        $stmt->store_result();
+        $num_rows = $stmt->num_rows;
+        $stmt->close();
+        return $num_rows > 0;
+    }
 
+	
+	/**
+     * Verifying OTP
+     * @param String $mobile Mobile to check for OTP
+	 * @param String $otp OTP to compare
+     * @return boolean
+     */
+    private function verifyOTP($mobile, $otp) {
+        $stmt = $this->conn->prepare("SELECT otp from otp WHERE mobile = ?");		
+        $stmt->bind_param("i", $mobile);
+        $stmt->execute();
+		$stmt->bind_result($savedOTP);
+        $stmt->store_result();
+		
+		while($stmt->fetch()) {
+			if($otp == (string)$savedOTP){
+				return true;
+			}
+		}
+		
+		$stmt->close();
+		
+		return false;		
+    }
+	
     /**
      * Fetching user by email
      * @param String $email User email id
@@ -590,12 +437,12 @@ class DbHandler {
         }
     }
 
-/**
+    /**
      * Fetching user id by api key
      * @param String $api_key user api key
      */
-    public function getUserId($api_key, $user_type) {
-        $stmt = $this->conn->prepare("SELECT id FROM ".$user_type." WHERE api_key = ?");
+    public function getUserId($api_key) {
+        $stmt = $this->conn->prepare("SELECT id FROM map_user WHERE api_key = ?");
         $stmt->bind_param("s", $api_key);
         if ($stmt->execute()) {
             $stmt->bind_result($user_id);
@@ -609,15 +456,14 @@ class DbHandler {
         }
     }
 
-  /**
+    /**
      * Validating user api key
      * If the api key is there in db, it is a valid key
      * @param String $api_key user api key
      * @return boolean
      */
-    public function isValidApiKey($api_key, $user_type) {
-        
-        $stmt = $this->conn->prepare("SELECT id from ".$user_type." WHERE api_key = ?");
+    public function isValidApiKey($api_key) {
+        $stmt = $this->conn->prepare("SELECT id from map_user WHERE api_key = ?");
         $stmt->bind_param("s", $api_key);
         $stmt->execute();
         $stmt->store_result();
@@ -625,12 +471,129 @@ class DbHandler {
         $stmt->close();
         return $num_rows > 0;
     }
+
     /**
      * Generating random Unique MD5 String for user Api key
      */
     private function generateApiKey() {
         return md5(uniqid(rand(), true));
     }
+
+    /* ------------- `tasks` table method ------------------ */
+
+    /**
+     * Creating new task
+     * @param String $user_id user id to whom task belongs to
+     * @param String $task task text
+     */
+    public function createTask($user_id, $task) {
+        $stmt = $this->conn->prepare("INSERT INTO tasks(task) VALUES(?)");
+        $stmt->bind_param("s", $task);
+        $result = $stmt->execute();
+        $stmt->close();
+
+        if ($result) {
+            // task row created
+            // now assign the task to user
+            $new_task_id = $this->conn->insert_id;
+            $res = $this->createUserTask($user_id, $new_task_id);
+            if ($res) {
+                // task created successfully
+                return $new_task_id;
+            } else {
+                // task failed to create
+                return NULL;
+            }
+        } else {
+            // task failed to create
+            return NULL;
+        }
+    }
+
+    /**
+     * Fetching single task
+     * @param String $task_id id of the task
+     */
+    public function getTask($task_id, $user_id) {
+        $stmt = $this->conn->prepare("SELECT t.id, t.task, t.status, t.created_at from tasks t, user_tasks ut WHERE t.id = ? AND ut.task_id = t.id AND ut.user_id = ?");
+        $stmt->bind_param("ii", $task_id, $user_id);
+        if ($stmt->execute()) {
+            $res = array();
+            $stmt->bind_result($id, $task, $status, $created_at);
+            // TODO
+            // $task = $stmt->get_result()->fetch_assoc();
+            $stmt->fetch();
+            $res["id"] = $id;
+            $res["task"] = $task;
+            $res["status"] = $status;
+            $res["created_at"] = $created_at;
+            $stmt->close();
+            return $res;
+        } else {
+            return NULL;
+        }
+    }
+
+    /**
+     * Fetching all user tasks
+     * @param String $user_id id of the user
+     */
+    public function getAllUserTasks($user_id) {
+        $stmt = $this->conn->prepare("SELECT t.* FROM tasks t, user_tasks ut WHERE t.id = ut.task_id AND ut.user_id = ?");
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        $tasks = $stmt->get_result();
+        $stmt->close();
+        return $tasks;
+    }
+
+    /**
+     * Updating task
+     * @param String $task_id id of the task
+     * @param String $task task text
+     * @param String $status task status
+     */
+    public function updateTask($user_id, $task_id, $task, $status) {
+        $stmt = $this->conn->prepare("UPDATE tasks t, user_tasks ut set t.task = ?, t.status = ? WHERE t.id = ? AND t.id = ut.task_id AND ut.user_id = ?");
+        $stmt->bind_param("siii", $task, $status, $task_id, $user_id);
+        $stmt->execute();
+        $num_affected_rows = $stmt->affected_rows;
+        $stmt->close();
+        return $num_affected_rows > 0;
+    }
+
+    /**
+     * Deleting a task
+     * @param String $task_id id of the task to delete
+     */
+    public function deleteTask($user_id, $task_id) {
+        $stmt = $this->conn->prepare("DELETE t FROM tasks t, user_tasks ut WHERE t.id = ? AND ut.task_id = t.id AND ut.user_id = ?");
+        $stmt->bind_param("ii", $task_id, $user_id);
+        $stmt->execute();
+        $num_affected_rows = $stmt->affected_rows;
+        $stmt->close();
+        return $num_affected_rows > 0;
+    }
+
+    /* ------------- `user_tasks` table method ------------------ */
+
+    /**
+     * Function to assign a task to user
+     * @param String $user_id id of the user
+     * @param String $task_id id of the task
+     */
+    public function createUserTask($user_id, $task_id) {
+        $stmt = $this->conn->prepare("INSERT INTO user_tasks(user_id, task_id) values(?, ?)");
+        $stmt->bind_param("ii", $user_id, $task_id);
+        $result = $stmt->execute();
+
+        if (false === $result) {
+            die('execute() failed: ' . htmlspecialchars($stmt->error));
+        }
+        $stmt->close();
+        return $result;
+    }
+
 }
 
 ?>

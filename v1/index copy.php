@@ -29,9 +29,8 @@ function authenticate(\Slim\Route $route) {
 
         // get the api key
         $api_key = $headers['Authorization'];
-        $user_type = $headers['User_Type'];
         // validating api key
-        if (!$db->isValidApiKey($api_key, $user_type)) {
+        if (!$db->isValidApiKey($api_key)) {
             // api key is not present in users table
             $response["error"] = true;
             $response["message"] = "Access Denied. Invalid Api key";
@@ -40,7 +39,7 @@ function authenticate(\Slim\Route $route) {
         } else {
             global $user_id;
             // get user primary key id
-            $user_id = $db->getUserId($api_key, $user_type);
+            $user_id = $db->getUserId($api_key);
         }
     } else {
         // api key is missing in header
@@ -62,24 +61,22 @@ function authenticate(\Slim\Route $route) {
  * params - mobile
  */
 $app->post('/otp_generate', function() use ($app) {
-            
             // check for required params
             verifyRequiredParams(array('mobile'));
-            
+
             $response = array();
 
             // reading post params            
             $mobile = $app->request->post('mobile');
-            
+
             // validating mobile
             validateMobile($mobile);
-            
-            $otp = SendSMS::send_OTP($mobile);          
-            //$otp = '1234';
-            
+			
+			$otp = SendSMS::send_OTP($mobile);
+			
             $db = new DbHandler();
             $res = $db->createOTP($mobile, $otp);
-                        
+
             if ($res == OTP_CREATED_SUCCESSFULLY) {
                 $response["error"] = false;
                 $response["message"] = "OTP inserted successfully";
@@ -90,8 +87,7 @@ $app->post('/otp_generate', function() use ($app) {
             // echo json response
             echoRespnse(201, $response);
         });
-        
-
+		
 /**
  * User Registration and Login of App User
  * url - /register_login_app_user
@@ -108,10 +104,10 @@ $app->post('/register_login_app_user', function() use ($app) {
             $mobile = $app->request->post('mobile');
             $otp = $app->request->post('otp');            
 
-            $db = new DbHandler();  
-            $res = $db->createAppUser($mobile, $otp);
+            $db = new DbHandler();	
+			$res = $db->createAppUser($mobile, $otp);
 
-            if ($res == APP_USER_CREATED_SUCCESSFULLY || $res == APP_USER_ALREADY_EXISTED) {
+			if ($res == APP_USER_CREATED_SUCCESSFULLY || $res == APP_USER_ALREADY_EXISTED) {
                 // get the user by email
                 $user = $db->getAppUserByMobile($mobile);
 
@@ -128,8 +124,8 @@ $app->post('/register_login_app_user', function() use ($app) {
             } else if ($res == APP_USER_CREATE_FAILED) {
                 $response["error"] = true;
                 $response["message"] = "Oops! An error occurred while registereing";            
-            }               
-            
+            }				
+			
             // echo json response
             echoRespnse(201, $response);
         });
@@ -544,194 +540,147 @@ $app->post('/addcampaign', 'authenticate', function() use ($app) {
                 echoRespnse(201, $response);
             // }            
         });
-
-
 /**
- * Get info of a particular user
+ * Listing all tasks of particual user
  * method GET
- * url /get_app_user_info
- * Will return 404 if the user does not exist
+ * url /tasks          
  */
-$app->get('/get_app_user_info', 'authenticate', function() {
-            global $user_id;
-            $response = array();
-            $db = new DbHandler();
+// $app->get('/tasks', 'authenticate', function() {
+//             global $user_id;
+//             $response = array();
+//             $db = new DbHandler();
 
-            // fetch task
-            $result = $db->getAppUserInfo($user_id);            
+//             // fetching all user tasks
+//             $result = $db->getAllUserTasks($user_id);
 
-            if ($result != NULL) {
-                $response["error"] = false;
-                $response["mobile"] = $result["mobile"];
-                $response["fb_first_name"] = $result["fb_first_name"];
-                $response["fb_last_name"] = $result["fb_last_name"];                
-                echoRespnse(200, $response);
-            } else {
-                $response["error"] = true;
-                $response["message"] = "The requested resource doesn't exists";
-                echoRespnse(404, $response);
-            }
-        });
+//             $response["error"] = false;
+//             $response["tasks"] = array();
+
+//             // looping through result and preparing tasks array
+//             while ($task = $result->fetch_assoc()) {
+//                 $tmp = array();
+//                 $tmp["id"] = $task["id"];
+//                 $tmp["task"] = $task["task"];
+//                 $tmp["status"] = $task["status"];
+//                 $tmp["createdAt"] = $task["created_at"];
+//                 array_push($response["tasks"], $tmp);
+//             }
+
+//             echoRespnse(200, $response);
+//         });
 
 /**
- * Get campaign link
+ * Listing single task of particual user
  * method GET
- * url /get_campaign_link
- * Will return 404 if error
+ * url /tasks/:id
+ * Will return 404 if the task doesn't belongs to user
  */
-$app->get('/get_campaign_link/:id', 'authenticate', function($location_id) {
-            global $user_id;
-            $response = array();
-            $db = new DbHandler();
+// $app->get('/tasks/:id', 'authenticate', function($task_id) {
+//             global $user_id;
+//             $response = array();
+//             $db = new DbHandler();
 
-            // fetch task
-            $result = $db->getCampaignLink($user_id, $location_id);
+//             // fetch task
+//             $result = $db->getTask($task_id, $user_id);
 
-            if ($result != NULL) {
-                $response["error"] = false;
-                $response["campaign_id"] = $result["campaign_id"];
-                $response["campaign_link"] = $result["campaign_link"];            
-                echoRespnse(200, $response);
-            } else {
-                $response["error"] = true;
-                $response["message"] = "The requested resource doesn't exists";
-                echoRespnse(404, $response);
-            }
-        });     
-        
+//             if ($result != NULL) {
+//                 $response["error"] = false;
+//                 $response["id"] = $result["id"];
+//                 $response["task"] = $result["task"];
+//                 $response["status"] = $result["status"];
+//                 $response["createdAt"] = $result["created_at"];
+//                 echoRespnse(200, $response);
+//             } else {
+//                 $response["error"] = true;
+//                 $response["message"] = "The requested resource doesn't exists";
+//                 echoRespnse(404, $response);
+//             }
+//         });
+
 /**
- * Updating fb info of app_user
+ * Creating new task in db
+ * method POST
+ * params - name
+ * url - /tasks/
+ */
+// $app->post('/tasks', 'authenticate', function() use ($app) {
+//             // check for required params
+//             verifyRequiredParams(array('task'));
+
+//             $response = array();
+//             $task = $app->request->post('task');
+
+//             global $user_id;
+//             $db = new DbHandler();
+
+//             // creating new task
+//             $task_id = $db->createTask($user_id, $task);
+
+//             if ($task_id != NULL) {
+//                 $response["error"] = false;
+//                 $response["message"] = "Task created successfully";
+//                 $response["task_id"] = $task_id;
+//                 echoRespnse(201, $response);
+//             } else {
+//                 $response["error"] = true;
+//                 $response["message"] = "Failed to create task. Please try again";
+//                 echoRespnse(200, $response);
+//             }            
+//         });
+
+/**
+ * Updating existing task
  * method PUT
- * params 
- * url - /update_app_user_info
+ * params task, status
+ * url - /tasks/:id
  */
-$app->put('/update_app_user_info', 'authenticate', function() use($app) {
-            // check for required params
-            verifyRequiredParams(array('fb_first_name', 'fb_last_name', 'fb_email', 'fb_id', 'fb_age', 'fb_gender', 'fb_city', 'fb_country'));
+// $app->put('/tasks/:id', 'authenticate', function($task_id) use($app) {
+//             // check for required params
+//             verifyRequiredParams(array('task', 'status'));
 
-            global $user_id;            
-            $fb_first_name = $app->request->put('fb_first_name');
-            $fb_last_name = $app->request->put('fb_last_name');
-            $fb_email = $app->request->put('fb_email');
-            $fb_id = $app->request->put('fb_id');
-            $fb_age = $app->request->put('fb_age');
-            $fb_gender = $app->request->put('fb_gender');
-            $fb_city = $app->request->put('fb_city');
-            $fb_country = $app->request->put('fb_country');
+//             global $user_id;            
+//             $task = $app->request->put('task');
+//             $status = $app->request->put('status');
 
-            $db = new DbHandler();
-            $response = array();
+//             $db = new DbHandler();
+//             $response = array();
 
-            // updating task
-            $result = $db->updateAppUserInfo($user_id, $fb_first_name, $fb_last_name, $fb_email, $fb_id, $fb_age, $fb_gender, $fb_city, $fb_country);
-            if ($result) {
-                // task updated successfully
-                $response["error"] = false;
-                $response["message"] = "User Info updated successfully";
-            } else {
-                // task failed to update
-                $response["error"] = true;
-                $response["message"] = "User Info failed to update. Please try again!";
-            }
-            echoRespnse(200, $response);
-        });
-
- 
- /**
- * App Session
- * url - /new_app_session
- * method - POST
- * params - location_id
- */
-$app->post('/new_app_session', 'authenticate', function() use ($app) {
-            // check for required params
-            verifyRequiredParams(array('location_id'));
-            
-            $response = array();
-
-            // reading post params            
-            $location_id = $app->request->post('location_id');          
-            
-            global $user_id;
-            
-            $db = new DbHandler();
-            $res = $db->createAppSession($user_id, $location_id);
-                        
-            if ($res) {
-                $response["error"] = false;
-                $response["message"] = "App Session created successfully";
-            } else{
-                $response["error"] = true;
-                $response["message"] = "Oops! An error occurred while creating app session";            
-            }
-            // echo json response
-            echoRespnse(201, $response);
-        });
-
+//             // updating task
+//             $result = $db->updateTask($user_id, $task_id, $task, $status);
+//             if ($result) {
+//                 // task updated successfully
+//                 $response["error"] = false;
+//                 $response["message"] = "Task updated successfully";
+//             } else {
+//                 // task failed to update
+//                 $response["error"] = true;
+//                 $response["message"] = "Task failed to update. Please try again!";
+//             }
+//             echoRespnse(200, $response);
+//         });
 
 /**
- * Get hotspot info
- * method GET
- * url /get_hotspot_info/:id
- * Will return 404 if error
+ * Deleting task. Users can delete only their tasks
+ * method DELETE
+ * url /tasks
  */
-$app->get('/get_hotspot_info/:id', 'authenticate', function($location_id) {
-            global $user_id;
-            $response = array();
-            $db = new DbHandler();
+// $app->delete('/tasks/:id', 'authenticate', function($task_id) use($app) {
+//             global $user_id;
 
-            // fetch task
-            $result = $db->getHotspotInfo($user_id, $location_id);
-
-            if ($result != NULL) {
-                $response["error"] = false;
-                $response["business_id"] = $result["business_id"];
-                $response["login_url"] = $result["login_url"];
-                $response["login_user"] = $result["login_user"];
-                $response["login_password_hash"] = $result["login_password_hash"];
-                echoRespnse(200, $response);
-            } else {
-                $response["error"] = true;
-                $response["message"] = "The requested resource doesn't exists";
-                echoRespnse(404, $response);
-            }
-        });     
-    
- /**
- * Post Campaign Activity
- * url - /post_campaign_activity
- * method - POST
- * params - campaign id
- */
-$app->post('/post_campaign_activity', 'authenticate', function() use ($app) {
-            
-            // check for required params
-            verifyRequiredParams(array('campaign_id'));
-            
-            global $user_id;
-            $response = array();
-
-            // reading post params            
-            $campaign_id = $app->request->post('campaign_id');
-                        
-            $db = new DbHandler();
-            $res = $db->postCampaignActivity($user_id, $campaign_id);           
-                        
-            if ($res) {
-                $response["error"] = false;
-                $response["message"] = "Campaign Actvity Posted successfully";
-            } else {
-                $response["error"] = true;
-                $response["message"] = "Oops! An error occurred while posting campaign activity";            
-            }
-            // echo json response
-            echoRespnse(201, $response);
-        });
-    
-        
-
-
-
+//             $db = new DbHandler();
+//             $response = array();
+//             $result = $db->deleteTask($user_id, $task_id);
+//             if ($result) {
+//                 // task deleted successfully
+//                 $response["error"] = false;
+//                 $response["message"] = "Task deleted succesfully";
+//             } else {
+//                 // task failed to delete
+//                 $response["error"] = true;
+//                 $response["message"] = "Task failed to delete. Please try again!";
+//             }
+//             echoRespnse(200, $response);
+//         });
 
 /**
  * Verifying required params posted or not
