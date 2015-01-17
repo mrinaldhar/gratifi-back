@@ -89,7 +89,26 @@ class DbHandler {
 
         return $response;
     }
-
+ /**
+       * Get Business id
+       * @param String $hotspot_id
+           * @return business_id
+       */
+      private function getBusinessId($hotspot_id) {
+                  $stmt = $this->conn->prepare("SELECT h.business_id from hotspot h WHERE h.id = ?");
+          $stmt->bind_param("s", $hotspot_id);
+          if ($stmt->execute()) {
+              $stmt->bind_result($business_id);
+              // TODO
+              // $task = $stmt->get_result()->fetch_assoc();
+              $stmt->fetch();
+              $stmt->close();
+  
+                          return $business_id;
+          } else {
+              return NULL;
+          }
+          }
     /**
      * Fetching app user info
      * @param String $mobile of the user
@@ -120,16 +139,15 @@ class DbHandler {
     public function getCampaignLink($user_id, $location_id) {   
         $hotspot_id = $this->getHotspotId($location_id);
         if($hotspot_id != NULL){            
-            $stmt1 = $this->conn->prepare("SELECT c.id, c.http_link from campaign c WHERE c.target_hotspots = ?");
+            $stmt1 = $this->conn->prepare("SELECT c.id from campaign c WHERE c.target_hotspots = ?");
             $stmt1->bind_param("i", $hotspot_id);
             if ($stmt1->execute()) {
                 $res = array();
-                $stmt1->bind_result($campaign_id, $campaign_link);
+                $stmt1->bind_result($campaign_id);
                 // TODO
                 // $task = $stmt->get_result()->fetch_assoc();
                 $stmt1->fetch();
                 $res["campaign_id"] = $campaign_id;
-                $res["campaign_link"] = $campaign_link;             
                 $stmt1->close();                
                 return $res;
             } else {
@@ -190,10 +208,11 @@ class DbHandler {
      * @param String $location_id
      */
     public function createAppSession($user_id, $location_id) {
-        $hotspot_id = $this->getHotspotId($location_id);        
+        $hotspot_id = $this->getHotspotId($location_id);   
+    $business_id = $this->getBusinessId($hotspot_id);     
         if($hotspot_id != NULL){    
-            $stmt = $this->conn->prepare("INSERT INTO app_session(app_user_id, hotspot_id) values(?,?)");
-            $stmt->bind_param("ii", $user_id, $hotspot_id);
+            $stmt = $this->conn->prepare("INSERT INTO app_session(app_user_id, hotspot_id, business_id) values(?,?,?)");
+            $stmt->bind_param("iii", $user_id, $hotspot_id, $business_id);
             $result = $stmt->execute();
             $stmt->close();
 
@@ -282,8 +301,8 @@ class DbHandler {
     }
     
     
-	
-	/**
+    
+    /**
      * Creating new user
      * @param String $name User full name
      * @param String $email User login email id
@@ -383,7 +402,7 @@ class DbHandler {
         return $num_rows > 0;
     }
 
-	
+    
 
     /**
      * Fetching user by email
@@ -410,7 +429,7 @@ class DbHandler {
         }
     }
 
-	
+    
     public function getTotalUsers($business_id) {
         $stmt = $this->conn->prepare("SELECT count(*) FROM app_user WHERE business_id = ?");
         $stmt->bind_param("i", $business_id);
@@ -541,8 +560,8 @@ class DbHandler {
     }
 
     public function allHotspots($business_id) {
-        $stmt = $this->conn->prepare("SELECT id, ssid from hotspot WHERE business_id = ?");
-        $stmt->bind_param("i", intval($business_id));
+        $stmt = $this->conn->prepare("SELECT * from hotspot WHERE business_id = ?");
+        $stmt->bind_param("i", $business_id);
         $stmt->execute();
         $result = $stmt->get_result();
         $stmt->close();
@@ -571,7 +590,7 @@ class DbHandler {
         }
     }
 
-	
+    
     /**
      * Fetching user api key
      * @param String $user_id user id primary key in user table

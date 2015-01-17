@@ -351,45 +351,45 @@ $app->get('/visitors/:what','authenticate',function($what) {
         array_push($response["stats"], $stats);
     }
     else if ($what == 'timesamonth') {
-    	$response = array();
-    	$db = new DbHandler();
+        $response = array();
+        $db = new DbHandler();
 
-    	$result = $db->timesamonth($_SESSION['businessid']);
-    	$response["error"]= false;
-    	$response["stats"] = array();
-    	$stats = array();
-    	$currmonth = 'notset';
-    	$total = 0;
+        $result = $db->timesamonth($_SESSION['businessid']);
+        $response["error"]= false;
+        $response["stats"] = array();
+        $stats = array();
+        $currmonth = 'notset';
+        $total = 0;
 
-    	while ($item = $result->fetch_assoc()) {
-    		$date = explode(' ', $item["login_time"])[0];
-    		$date = explode('-', $date);
-    		$month = $date[1];
-    		$year = $date[0];
-    		$month = $year.'-'.$month;
-    		if ($currmonth == 'notset') {
-    			$currmonth = $month;
-    			if (array_key_exists($item["app_user_id"], $stats))
-    			{
-    			$stats[$item["app_user_id"]]++;
-    			}
-    			else {
-    				$stats[$item["app_user_id"]] = 1;
-    			}
-    		}
-    		else {
-    			if ($month == $currmonth) {
-    				if (array_key_exists($item["app_user_id"], $stats))
-    			{
-    			$stats[$item["app_user_id"]]++;
-    			}
-    			else {
-    				$stats[$item["app_user_id"]] = 1;
-    			}
-    			}
-    		}
-    	}
-    	array_push($response["stats"], $stats);
+        while ($item = $result->fetch_assoc()) {
+            $date = explode(' ', $item["login_time"])[0];
+            $date = explode('-', $date);
+            $month = $date[1];
+            $year = $date[0];
+            $month = $year.'-'.$month;
+            if ($currmonth == 'notset') {
+                $currmonth = $month;
+                if (array_key_exists($item["app_user_id"], $stats))
+                {
+                $stats[$item["app_user_id"]]++;
+                }
+                else {
+                    $stats[$item["app_user_id"]] = 1;
+                }
+            }
+            else {
+                if ($month == $currmonth) {
+                    if (array_key_exists($item["app_user_id"], $stats))
+                {
+                $stats[$item["app_user_id"]]++;
+                }
+                else {
+                    $stats[$item["app_user_id"]] = 1;
+                }
+                }
+            }
+        }
+        array_push($response["stats"], $stats);
     }
     echoRespnse(200, $response);
 });
@@ -416,37 +416,37 @@ $app->get('/campaign/:id', function($id) {
     $response = array();
     $db = new DbHandler();
     $result = $db->getcampaign($id);
-	$response["error"] = false;
-	$response["result"] = array();
-	while ($item = $result->fetch_assoc()) {
-		array_push($response["result"], $item);
-	}
-	// echoRespnse(200,$response);
-	$headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1"></head>';
+    $response["error"] = false;
+    $response["result"] = array();
+    while ($item = $result->fetch_assoc()) {
+        array_push($response["result"], $item);
+    }
+    // echoRespnse(200,$response);
+    $headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1"></head>';
     // $headpart = '<html><head><title>Advertisement</title><link rel="stylesheet" href="http://localhost/~sankaul/g/gratifi/css/bootstrap.min.css" /><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"></head>';
     
     $obj = json_encode($response["result"][0]);
     $obj = json_decode($obj);
     if ($obj->campaign_type == 'Video') {
-    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;"><a href="'.$obj->video.'"><button class="btn btn-primary" style="margin-top:40px;">Watch a cool video!</button></a></p></div></body>';
+    $body = '<body><div class="container-fluid" style="max-height:70%"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;"><a href="'.$obj->video.'"><button class="btn btn-primary btn-lg" style="margin-top:40px;">Watch our latest Ad!</button></a></p></div></body>';
     
     }
     else if ($obj->campaign_type == 'Interstitial') {
-    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->link.'"><button class="btn btn-primary" style="margin-top:40px;">Check in to this place on Facebook!</button></a></p></div></body>';
+    $body = '<body><div class="container-fluid" style="max-height:70%"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->link.'"><button class="btn btn-primary" style="margin-top:40px;">Check in to this place on Facebook!</button></a></p></div></body>';
     
     }
     else if ($obj->campaign_type == 'Feedback Form') {
         
-    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; margin-left:auto; margin-right:auto; width:65%;" /><br /><p style="font-size:1.7em; margin:20px; text-align:center;">'.$obj->question.'<br /><a href="submitform.php"><button class="btn btn-primary" style="margin-top:40px;">'.$obj->opt1.'</button></a><br /><a href="submitform.php"><button class="btn btn-primary" style="margin-top:40px;">'.$obj->opt2.'</button></a><br /><a href="submitform.php"><button class="btn btn-primary" style="margin-top:40px;">'.$obj->opt3.'</button></a></p></div></body>';
+    $body = '<body><div class="container-fluid" style="max-height:70%"><img src="'.$obj->logo.'" style="margin-top: 20px; display:block; margin-left:auto; margin-right:auto; width:65%;" /><br /><p style="font-size:1.7em; margin:0px; text-align:center;">'.$obj->question.'<br /><a href="submitform.php"><button class="btn btn-primary" style="width:100; margin-top:20px;">'.$obj->opt1.'</button></a><br /><a href="submitform.php"><button class="btn btn-primary" style="width:100; margin-top:20px;">'.$obj->opt2.'</button></a><br /><a href="submitform.php"><button class="btn btn-primary" style="width:100; margin-top:20px;">'.$obj->opt3.'</button></a></p></div></body>';
     
     }
     else if ($obj->campaign_type == 'FB Page') {
-    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->fbpage.'"><button class="btn btn-primary" style="margin-top:40px;">Visit our Facebook Page!</button></a></p></div></body>';
+    $body = '<body><div class="container-fluid" style="max-height:70%"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; margin-left:auto; margin-right:auto; width:80%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->fbpage.'"><button class="btn btn-primary" style="margin-top:40px;">Visit our Facebook Page!</button></a></p></div></body>';
         
     }
     else if ($obj->campaign_type == 'App Download') {
         
-    $body = '<body><div class="container-fluid"><img src="'.$obj->logo.'" style="margin-top: 40px; display:block; width:100%;" /><br /><p style="font-size:1.5em; margin:20px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->playstore.'"><button class="btn btn-primary" style="margin-top:40px;">Download app from Google Playstore!</button></a></p></div></body>';
+    $body = '<body><div class="container-fluid" style="max-height:70%"><img src="'.$obj->logo.'" style="margin-top: 30px; display:block; margin-left:auto; margin-right:auto; width:80%;" /><br /><p style="font-size:1.5em; margin:0px; text-align:center;">'.$obj->message.'<br /><a href="'.$obj->playstore.'"><button class="btn btn-primary" style="margin-top:10px;">Download app from Google Playstore!</button></a></p></div></body>';
     }
     $tailpart = '</html>';
     echo $headpart . $body . $tailpart;
@@ -461,29 +461,29 @@ $response = array();
 });
 
 $app->post('/addbusiness', function() use ($app) {
-	verifyRequiredParams(array('address', 'city', 'name', 'contact'));
-	$response = array();
-	$name = $app->request->post('name');
-	$address = $app->request->post('address');
-	$city = $app->request->post('city');
-	$contact = $app->request->post('contact');
-	$db = new DbHandler();
-	$result = $db->addBusiness($name, $address, $city, $contact);
-	$response["error"] = false;
-	$response["message"] = "Business added successfully.";
-	echoRespnse(201,$response);
+    verifyRequiredParams(array('address', 'city', 'name', 'contact'));
+    $response = array();
+    $name = $app->request->post('name');
+    $address = $app->request->post('address');
+    $city = $app->request->post('city');
+    $contact = $app->request->post('contact');
+    $db = new DbHandler();
+    $result = $db->addBusiness($name, $address, $city, $contact);
+    $response["error"] = false;
+    $response["message"] = "Business added successfully.";
+    echoRespnse(201,$response);
 });
 
 $app->get('/businesses', function() {
 $response = array();
     $db = new DbHandler();
     $result = $db->allBusinesses();
-	$response["error"] = false;
-	$response["result"] = array();
-	while ($item = $result->fetch_assoc()) {
-		array_push($response["result"], $item);
-	}
-	echoRespnse(200,$response);
+    $response["error"] = false;
+    $response["result"] = array();
+    while ($item = $result->fetch_assoc()) {
+        array_push($response["result"], $item);
+    }
+    echoRespnse(200,$response);
 });
 
 $app->get('/hotspots', 'authenticate', function() use ($app) {
@@ -493,10 +493,16 @@ $app->get('/hotspots', 'authenticate', function() use ($app) {
         $response["list"] = array();
         $list = array();
         $result = $db->allHotspots($_SESSION['businessid']);
+        $mainlist = array();
         while ($item = $result->fetch_assoc()) {
-            array_push($list, $item["ssid"].'+'.$item["id"]);
+            $list["hname"] = $item["ssid"];
+            $list["hurl"] = $item["login_url"];
+            $list["huname"] = $item["login_user"];
+            $list["hstatus"] = $item["status"];
+            $list["hid"] = $item["id"];
+            array_push($mainlist, $list);
         }
-        array_push($response["list"], $list);
+        array_push($response["list"], $mainlist);
         echoRespnse(200, $response);
 });
 $app->post('/addcampaign', 'authenticate', function() use ($app) {
@@ -511,7 +517,7 @@ $app->post('/addcampaign', 'authenticate', function() use ($app) {
             $c_interests = $app->request->post('c_interests');
             $c_cities = $app->request->post('c_cities');
             $c_businesses = 'default';
-            $c_hotspots = "hi";
+            $c_hotspots = "default";
             $c_remarketing = 1;
             $c_views = 0;
             $c_conversions = $app->request->post('c_conversions');
@@ -530,7 +536,7 @@ $app->post('/addcampaign', 'authenticate', function() use ($app) {
             $videourl = $app->request->post('videourl');
 
             $db = new DbHandler();
-            $user_id = $db->getUserId($_SESSION['apikey']);
+            $user_id = $db->getUserId($_SESSION['apikey'], 'map_user');
             $campaign_id = $db->createCampaign($_SESSION['businessid'], $user_id, $c_type, $c_hotspots, $c_views, $c_businesses, $c_interests, $c_status, $c_gender, $c_remarketing, $c_agegroup, $c_cities, $c_conversions, $c_cost, $link, $msg, $question, $linkfb, $linkplay, $opt1, $opt2, $opt3, $imgurl, $logourl, $videourl);
 
             // if ($campaign_id != NULL) {
@@ -590,7 +596,6 @@ $app->get('/get_campaign_link/:id', 'authenticate', function($location_id) {
             if ($result != NULL) {
                 $response["error"] = false;
                 $response["campaign_id"] = $result["campaign_id"];
-                $response["campaign_link"] = $result["campaign_link"];            
                 echoRespnse(200, $response);
             } else {
                 $response["error"] = true;
@@ -783,11 +788,11 @@ function validateEmail($email) {
  */
 function validateMobile($mobile) {
     $app = \Slim\Slim::getInstance();
-	
-	if(!is_numeric($mobile) || strlen($mobile) < 10) {
+    
+    if(!is_numeric($mobile) || strlen($mobile) < 10) {
       $response = "Please provide a valid number";
-	  echoRespnse(400, $response);
-	  $app->stop();
+      echoRespnse(400, $response);
+      $app->stop();
    }   
 }
 
