@@ -157,6 +157,8 @@ $app->post('/register', function() use ($app) {
             $city = $app->request->post('city');
             
             $mobile = $app->request->post('mobile');
+            $user_type = $app->request->post('user_type');
+
             $exist_business = $app->request->post('exist_business');
 
 
@@ -167,13 +169,22 @@ $app->post('/register', function() use ($app) {
 
             if ($exist_business == 'Existing Business') {
             $businessid = $app->request->post('businessid');
-            $res = $db->createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile);
+            $res = $db->createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile, $user_type);
 
             }
             else if ($exist_business == 'New Business') {
+            $businessname = $app->request->post('businessname');
+            $businesscity = $app->request->post('businesscity');
+            $businessaddress = $app->request->post('businessaddress');
+            $businessphone = $app->request->post('businessphone');
 
-            $res = $db->createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile);
-
+            $db->addBusiness($businessname, $businessaddress, $businesscity, $businessphone);
+            $businessarray = $db->getBusinessIdFromDetails($businessname, $businessaddress, $businesscity, $businessphone);
+            
+            while ($items = $businessarray->fetch_assoc()) {   
+            $thisid = $items['id'];
+            $res = $db->createUser($name, $email, $password, $age, $thisid, $gender, $city, $country, $mobile, $user_type);
+            }
 
             }
 
@@ -505,6 +516,7 @@ $app->get('/hotspots', 'authenticate', function() use ($app) {
         array_push($response["list"], $mainlist);
         echoRespnse(200, $response);
 });
+
 $app->post('/addcampaign', 'authenticate', function() use ($app) {
 
             verifyRequiredParams(array('c_type'));

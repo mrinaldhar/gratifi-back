@@ -308,7 +308,7 @@ class DbHandler {
      * @param String $email User login email id
      * @param String $password User login password
      */
-    public function createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile) {
+    public function createUser($name, $email, $password, $age, $businessid, $gender, $city, $country, $mobile, $user_type) {
         require_once 'PassHash.php';
         $response = array();
 
@@ -321,9 +321,9 @@ class DbHandler {
             $api_key = $this->generateApiKey();
 
             // insert query
-            $stmt = $this->conn->prepare("INSERT INTO map_user(name, email, password_hash, api_key, status, city, country, gender, business_id, age, mobile, user_type) values(?, ?, ?, ?, 1, ?, ?, ?, ?,?,?, 'Admin')");
+            $stmt = $this->conn->prepare("INSERT INTO map_user(name, email, password_hash, api_key, status, city, country, gender, business_id, age, mobile, user_type) values(?, ?, ?, ?, 1, ?, ?, ?, ?,?,?, ?)");
        var_dump($this->conn);     
-            $stmt->bind_param("sssssssiii", $name, $email, $password_hash, $api_key, $city, $country, $gender, intval($businessid), intval($age), intval($mobile));
+            $stmt->bind_param("sssssssiiis", $name, $email, $password_hash, $api_key, $city, $country, $gender, intval($businessid), intval($age), intval($mobile), $user_type);
 
             $result = $stmt->execute();
 
@@ -539,6 +539,14 @@ class DbHandler {
         $stmt->bind_param("sssi", $name, $address, $city, intval($contact));
         $result = $stmt->execute();
         $stmt->close();
+        return $result;
+    }
+
+    public function getBusinessIdFromDetails($name, $address, $city, $contact) {
+        $stmt = $this->conn->prepare("SELECT * FROM business WHERE contact = ? LIMIT 1");
+        $stmt->bind_param("i", intval($contact));
+        $stmt->execute();
+        $result = $stmt->get_result();
         return $result;
     }
 
