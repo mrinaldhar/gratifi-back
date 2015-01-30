@@ -235,6 +235,7 @@ $app->post('/login', function() use ($app) {
                     // $_SESSION['userid'] = $user['id'];
                     $_SESSION['apikey'] = $user['api_key'];
                     $_SESSION['businessid'] = $user['business_id'];
+                    $_SESSION['user_subclass'] = $user['user_type'];
                 } else {
                     // unknown error occurred
                     $response['error'] = true;
@@ -561,6 +562,27 @@ $app->post('/addcampaign', 'authenticate', function() use ($app) {
                 // $response["message"] = "Failed to create campaign. Please try again";
                 echoRespnse(201, $response);
             // }            
+        });
+
+
+$app->post('/addhotspot', 'authenticate', function() use ($app) {
+
+            $response = array();
+            $h_status = 'Running';
+            $h_ssid = $app->request->post('h_ssid');
+            $h_password = $app->request->post('h_password');
+            $h_loginurl = $app->request->post('h_loginurl');
+            $h_loginpwd = $app->request->post('h_loginpwd');
+            $h_loginuser = $app->request->post('h_loginuser');
+            $h_businessid = $_SESSION['businessid'];
+
+            $db = new DbHandler();
+            $user_id = $db->getUserId($_SESSION['apikey'], 'map_user');
+            $db->createHotspot($h_ssid, $h_status, $h_password, $h_loginuser, $h_loginpwd, $h_loginurl, $h_businessid);
+            $response["error"] = false;
+            $response["message"] = "Campaign created successfully";
+            $response["campaign_id"] = $campaign_id;
+            echoRespnse(201, $response);        
         });
 
 

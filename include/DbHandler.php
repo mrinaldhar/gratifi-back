@@ -517,6 +517,14 @@ class DbHandler {
         return $result;
     }
 
+    public function createHotspot($h_ssid, $h_status, $h_password, $h_loginuser, $h_loginpwd, $h_loginurl, $h_businessid) {
+        $stmt = $this->conn->prepare("INSERT INTO hotspot(ssid, status, business_id, wifi_password_hash, login_url, login_user, login_password_hash) VALUES (?,?,?,?,?,?,?)");
+        $stmt->bind_param("ssissss", $h_ssid, $h_status, intval($h_businessid), $h_password, $h_loginurl, $h_loginuser, $h_loginpwd);
+        $result = $stmt->execute();
+        $stmt->close();
+        return 1;
+    }
+
     public function getCampaign($id) {
         $stmt = $this->conn->prepare("SELECT * FROM campaign where id = ? LIMIT 1");
         $stmt->bind_param("i", $id);
